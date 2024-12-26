@@ -173,23 +173,61 @@ def predict_ner(ort_session, sentence, word2idx, char2idx, idx2tag):
     pred_tags = [idx2tag[preds[i]] for i in range(real_length)]
     return tokens, pred_tags
 
+# def render_ner(tokens, tags):
+#     # st.write(tokens, tags)
+#     tag_colors = {
+#         "B-PER": "blue",
+#         "I-PER": "cyan",
+#         "B-ORG": "green",
+#         "I-ORG": "mint",
+#         "B-LOC": "orange",
+#         "I-LOC": "peach",
+#         "B-MISC": "purple",
+#         "I-MISC": "lavender",
+#     }
+    
+#     tag_descriptions = {
+#         "B-PER": "Beginning of Person",
+#         "I-PER": "Inside of Person",
+#         "B-ORG": "Beginning of Organization",
+#         "I-ORG": " Inside of Organization",
+#         "B-LOC": "Beginning of Location",
+#         "I-LOC": "Inside of Location",
+#         "B-MISC": "Beginning of Miscellaneous",
+#         "I-MISC": "Inside of Miscellaneous",
+#     }
+
+#     result_str = ""
+#     for token, tag in zip(tokens, tags):
+#         if tag in tag_colors:
+#             color = tag_colors[tag]
+#             result_str += f":{color}[{token}] "
+#         else:
+#             result_str += f"{token} "
+#     st.write(result_str)
+
+#     colored_tags = [x for x in dict.fromkeys(tags) if x != 'O']
+#     st.write("Tags:", colored_tags)
+#     for tag in colored_tags:
+#          st.write(f":{tag_colors[tag]}[{tag}: {tag_descriptions[tag]}]")
+
 def render_ner(tokens, tags):
     tag_colors = {
-        "B-PER": "blue",
-        "I-PER": "lightblue",
-        "B-ORG": "green",
-        "I-ORG": "lightgreen",
-        "B-LOC": "orange",
-        "I-LOC": "lightorange",
-        "B-MISC": "purple",
-        "I-MISC": "lightpurple",
+        "B-PER": "#1E90FF",  # Sky Blue
+        "I-PER": "#00CED1",  # Dark Turquoise
+        "B-ORG": "#32CD32",  # Lime Green
+        "I-ORG": "#98FB98",  # Pale Green
+        "B-LOC": "#FFA500",  # Orange
+        "I-LOC": "#FFDAB9",  # Peach Puff
+        "B-MISC": "#9370DB",  # Medium Purple
+        "I-MISC": "#E6E6FA",  # Lavender
     }
     
     tag_descriptions = {
         "B-PER": "Beginning of Person",
         "I-PER": "Inside of Person",
         "B-ORG": "Beginning of Organization",
-        "I-ORG": " Inside of Organization",
+        "I-ORG": "Inside of Organization",
         "B-LOC": "Beginning of Location",
         "I-LOC": "Inside of Location",
         "B-MISC": "Beginning of Miscellaneous",
@@ -200,14 +238,19 @@ def render_ner(tokens, tags):
     for token, tag in zip(tokens, tags):
         if tag in tag_colors:
             color = tag_colors[tag]
-            result_str += f":{color}[{token}] "
+            result_str += f"<span style='color:{color};'>{token}</span> "
         else:
             result_str += f"{token} "
-    st.write(result_str)
+    
+    st.markdown(result_str, unsafe_allow_html=True)
 
     colored_tags = [x for x in dict.fromkeys(tags) if x != 'O']
     for tag in colored_tags:
-         st.write(f":{tag_colors[tag]}[{tag}: {tag_descriptions[tag]}]")
+        color = tag_colors[tag]
+        st.markdown(
+            f"<span style='color:{color};'>{tag}: {tag_descriptions[tag]}</span>",
+            unsafe_allow_html=True
+        )
 
 
 # ----------------------
