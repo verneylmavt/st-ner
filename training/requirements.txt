@@ -1,0 +1,8 @@
+tqdm  
+numpy  
+matplotlib  
+datasets  
+torch  
+seqeval  
+optuna  
+nltk
