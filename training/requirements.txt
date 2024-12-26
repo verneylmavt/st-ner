@@ -2,7 +2,8 @@ tqdm
 numpy  
 matplotlib  
 datasets  
+nltk
 torch  
 seqeval  
 optuna  
-nltk
+onnxruntime
