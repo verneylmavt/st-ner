@@ -1,6 +1,8 @@
 # 📑 Named Entity Recognition (NER) Model Collections
 
-This repository machine learning models of Named Entity Recognition (NER), designed to be deployed using ONNX and utilized in a Streamlit-based web application. The app provides an interactive interface for performing various tasks using neural network architectures. [Check here to see other ML models](https://github.com/verneylmavt/ml-model).
+This repository contains machine learning models of Named Entity Recognition (NER), designed to be deployed using ONNX and utilized in a Streamlit-based web application. The app provides an interactive interface for performing various tasks using neural network architectures. [Check here to see other ML models](https://github.com/verneylmavt/ml-model).
+
+For more information about the training process, please check the training `.ipynb` files in the `training` folder.
 
 ## 🎈 Demo App
 
