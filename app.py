@@ -2,8 +2,8 @@ import os
 import json
 import streamlit as st
 import numpy as np
+import pandas as pd
 import spacy
-import onnx
 import onnxruntime
 from annotated_text import annotated_text
 
@@ -103,15 +103,13 @@ class Model(nn.Module):
 def load_model(model_name):
     try:
         model_path = os.path.join("models", str(model_name), "model-q.onnx")
-        net = onnx.load(model_path)
-        onnx.checker.check_model(net)
+        ort_session = onnxruntime.InferenceSession(model_path)
     except FileNotFoundError:
         st.error(f"Model file not found for {model_name}. Please ensure 'model-state.pth' exists in the model directory.")
         st.stop()
     except Exception as e:
         st.error(f"An error occurred while loading the model for {model_name}: {e}")
         st.stop()
-    ort_session = onnxruntime.InferenceSession(model_path)
     return ort_session
 
 @st.cache_data
@@ -131,6 +129,16 @@ def load_vocab(model_name):
     except Exception as e:
         st.error(f"An error occurred while loading the vocabulary for {model_name}: {e}")
         st.stop()
+        
+@st.cache_data
+def load_training_data():
+    training_data = {
+    "Epoch": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "Train Loss": [0.2450, 0.0729, 0.0474, 0.0354, 0.0250, 0.0192, 0.0157, 0.0134, 0.0107],
+    "Train Accuracy": [0.9299, 0.9789, 0.9864, 0.9898, 0.9926, 0.9943, 0.9953, 0.9961, 0.9969],
+    "Validation Accuracy": [0.9754, 0.9793, 0.9804, 0.9826, 0.9827, 0.9836, 0.9827, 0.9772, 0.9781],
+    }
+    return pd.DataFrame(training_data)
 
 # ----------------------
 # Prediction Function
@@ -299,6 +307,7 @@ def main():
     
     word2idx, char2idx, idx2tag  = load_vocab(model)
     net = load_model(model)
+    training_data = load_training_data()
     
     st.subheader(model_info[model]["subheader"])
     
@@ -313,6 +322,7 @@ def main():
     
     with st.form(key="ner_form"):
         user_input = st.text_input("Enter Text Here:")
+        st.caption("_e.g. U.N. official Ekeus heads for Baghdad._")
         submit_button = st.form_submit_button(label="Recognize")
         
         if submit_button:
@@ -345,6 +355,16 @@ def main():
             st.caption(key)
             st.latex(value)
     else: pass
+    
+    st.subheader("""Training""")
+    st.line_chart(training_data.set_index("Epoch"))
+    
+    st.subheader("""Evaluation Metrics""")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Accuracy", "0.9682", border=True)
+    col2.metric("Precision", "0.8105", border=True)
+    col3.metric("Recall", "0.8433", border=True)
+    col4.metric("F1 Score", "0.8266", border=True)
 
 if __name__ == "__main__":
     main()
