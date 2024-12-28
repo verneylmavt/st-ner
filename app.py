@@ -5,6 +5,7 @@ import numpy as np
 import spacy
 import onnx
 import onnxruntime
+from annotated_text import annotated_text
 
 # ----------------------
 # Configuration
@@ -94,7 +95,11 @@ class Model(nn.Module):
     }
 }
 
-# @st.cache_resource
+# ----------------------
+# Loading Function
+# ----------------------
+
+@st.cache_resource
 def load_model(model_name):
     try:
         model_path = os.path.join("models", str(model_name), "model-q.onnx")
@@ -109,7 +114,7 @@ def load_model(model_name):
     ort_session = onnxruntime.InferenceSession(model_path)
     return ort_session
 
-# @st.cache_resource
+@st.cache_data
 def load_vocab(model_name):
     try:
         model_path = os.path.join("models", model_name)
@@ -121,7 +126,7 @@ def load_vocab(model_name):
             idx2tag = json.load(json_file)
         return word2idx, char2idx, {int(k): v for k, v in idx2tag.items()}
     except FileNotFoundError:
-        st.error(f"Vocabulary file not found for {model_name}. Please ensure 'vocab.pkl' exists in the model directory.")
+        st.error(f"Vocabulary file not found for {model_name}. Please ensure 'word2idx.json', 'char2idx.json', 'idx2tag.json' exists in the model directory.")
         st.stop()
     except Exception as e:
         st.error(f"An error occurred while loading the vocabulary for {model_name}: {e}")
@@ -211,46 +216,75 @@ def predict_ner(ort_session, sentence, word2idx, char2idx, idx2tag):
 #     for tag in colored_tags:
 #          st.write(f":{tag_colors[tag]}[{tag}: {tag_descriptions[tag]}]")
 
+# def render_ner(tokens, tags):
+#     tag_colors = {
+#         "B-PER": "#1E90FF",  # Sky Blue
+#         "I-PER": "#00CED1",  # Dark Turquoise
+#         "B-ORG": "#32CD32",  # Lime Green
+#         "I-ORG": "#98FB98",  # Pale Green
+#         "B-LOC": "#FFA500",  # Orange
+#         "I-LOC": "#FFDAB9",  # Peach Puff
+#         "B-MISC": "#9370DB",  # Medium Purple
+#         "I-MISC": "#E6E6FA",  # Lavender
+#     }
+    
+#     tag_descriptions = {
+#         "B-PER": "Beginning of Person",
+#         "I-PER": "Inside of Person",
+#         "B-ORG": "Beginning of Organization",
+#         "I-ORG": "Inside of Organization",
+#         "B-LOC": "Beginning of Location",
+#         "I-LOC": "Inside of Location",
+#         "B-MISC": "Beginning of Miscellaneous",
+#         "I-MISC": "Inside of Miscellaneous",
+#     }
+
+#     result_str = ""
+#     for token, tag in zip(tokens, tags):
+#         if tag in tag_colors:
+#             color = tag_colors[tag]
+#             result_str += f"<span style='color:{color};'>{token}</span> "
+#         else:
+#             result_str += f"{token} "
+    
+#     st.markdown(result_str, unsafe_allow_html=True)
+
+#     colored_tags = [x for x in dict.fromkeys(tags) if x != 'O']
+#     for tag in colored_tags:
+#         color = tag_colors[tag]
+#         st.markdown(
+#             f"<span style='color:{color};'>{tag}: {tag_descriptions[tag]}</span>",
+#             unsafe_allow_html=True
+#         )
+
 def render_ner(tokens, tags):
-    tag_colors = {
-        "B-PER": "#1E90FF",  # Sky Blue
-        "I-PER": "#00CED1",  # Dark Turquoise
-        "B-ORG": "#32CD32",  # Lime Green
-        "I-ORG": "#98FB98",  # Pale Green
-        "B-LOC": "#FFA500",  # Orange
-        "I-LOC": "#FFDAB9",  # Peach Puff
-        "B-MISC": "#9370DB",  # Medium Purple
-        "I-MISC": "#E6E6FA",  # Lavender
-    }
-    
     tag_descriptions = {
-        "B-PER": "Beginning of Person",
-        "I-PER": "Inside of Person",
-        "B-ORG": "Beginning of Organization",
-        "I-ORG": "Inside of Organization",
-        "B-LOC": "Beginning of Location",
-        "I-LOC": "Inside of Location",
-        "B-MISC": "Beginning of Miscellaneous",
-        "I-MISC": "Inside of Miscellaneous",
+        "PER": "Person",
+        "ORG": "Organization",
+        "LOC": "Location",
+        "MISC": "Miscellaneous"
     }
+    annotated_output = []
+    current_entity = []
+    current_label = None
 
-    result_str = ""
     for token, tag in zip(tokens, tags):
-        if tag in tag_colors:
-            color = tag_colors[tag]
-            result_str += f"<span style='color:{color};'>{token}</span> "
+        if tag.startswith("B-"):
+            if current_entity:
+                annotated_output.append((" ".join(current_entity), tag_descriptions[current_label]))
+                current_entity = []
+            current_entity.append(token)
+            current_label = tag.split("-")[1]
+        elif tag.startswith("I-") and current_label == tag.split("-")[1]:
+            current_entity.append(token)
         else:
-            result_str += f"{token} "
-    
-    st.markdown(result_str, unsafe_allow_html=True)
-
-    colored_tags = [x for x in dict.fromkeys(tags) if x != 'O']
-    for tag in colored_tags:
-        color = tag_colors[tag]
-        st.markdown(
-            f"<span style='color:{color};'>{tag}: {tag_descriptions[tag]}</span>",
-            unsafe_allow_html=True
-        )
+            if current_entity:
+                annotated_output.append((" ".join(current_entity), tag_descriptions[current_label]))
+                current_entity = []
+            annotated_output.append(" " + token + " ")
+    if current_entity:
+        annotated_output.append((" ".join(current_entity), tag_descriptions[current_label]))
+    return annotated_output
 
 
 # ----------------------
@@ -261,21 +295,36 @@ def main():
     
     model_names = list(model_info.keys())
     model = st.selectbox("Select a Model", model_names)
+    st.divider()
     
     word2idx, char2idx, idx2tag  = load_vocab(model)
     net = load_model(model)
     
     st.subheader(model_info[model]["subheader"])
-    user_input = st.text_area("Enter Text Here:")
     
-    if st.button("Analyze"):
-        if user_input.strip():
-            with st.spinner('Analyzing...'):
-                tokens, tags = predict_ner(net, user_input, word2idx, char2idx, idx2tag)
-                render_ner(tokens, tags)
-        else:
-            st.warning("Please enter some text for analysis.")
-            
+    # user_input = st.text_input("Enter Text Here:")
+    # if st.button("Recognize"):
+    #     if user_input.strip():
+    #         with st.spinner('Recognizing...'):
+    #             tokens, tags = predict_ner(net, user_input, word2idx, char2idx, idx2tag)
+    #             render_ner(tokens, tags)
+    #     else:
+    #         st.warning("Please enter some text for analysis.")
+    
+    with st.form(key="ner_form"):
+        user_input = st.text_input("Enter Text Here:")
+        submit_button = st.form_submit_button(label="Recognize")
+        
+        if submit_button:
+            if user_input.strip():
+                with st.spinner('Recognizing...'):
+                    tokens, tags = predict_ner(net, user_input, word2idx, char2idx, idx2tag)
+                    annotated_output = render_ner(tokens, tags)
+                annotated_text(*annotated_output)
+            else:
+                st.warning("Please enter some text for analysis.")
+    
+    # st.divider()        
     st.feedback("thumbs")
     st.warning("""Disclaimer: This model has been quantized for optimization.
             Check here for more details: [GitHub Repo🐙](https://github.com/verneylmavt/st-ner)""")

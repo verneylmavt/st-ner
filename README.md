@@ -8,6 +8,8 @@ For more information about the training process, please check the `.ipynb` files
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://verneylogyt-ner.streamlit.app/)
 
+If you encounter message `This app has gone to sleep due to inactivity`, click `Yes, get this app back up!` button to wake the app back up.
+
 <!-- [https://verneylogyt.streamlit.app/](https://verneylogyt.streamlit.app/) -->
 
 ## ⚙️ Running Locally
