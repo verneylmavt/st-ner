@@ -6,7 +6,9 @@ For more information about the training process, please check the `.ipynb` files
 
 ## 🎈 Demo App
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://verneylogyt-ner.streamlit.app/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://verneylogyt-ner.streamlit.app/)  
+
+![Demo GIF](https://github.com/verneylmavt/st-ner/blob/main/assets/demo.gif)
 
 If you encounter message `This app has gone to sleep due to inactivity`, click `Yes, get this app back up!` button to wake the app back up.
 
