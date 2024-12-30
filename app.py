@@ -1,6 +1,9 @@
 import os
 import json
 import streamlit as st
+from streamlit_extras.chart_container import chart_container
+from streamlit_extras.mention import mention
+from streamlit_extras.echo_expander import echo_expander
 import numpy as np
 import pandas as pd
 import spacy
@@ -28,22 +31,26 @@ model_info = {
         "subheader": "Model: Bi-LSTM w/ Attention",
         "pre_processing": """
 Dataset = CoNLL 2003
+Tokenizer = NLTK("Word Tokenizer")
 Embedding Model = GloVe("6B.200d")
         """,
         "parameters": """
 Batch Size = 64
-Word Embedding Size = 200
-Character Embedding Size = 50
-LSTM Hidden Size = 300
-Number of LSTM Layers = 2
-Number of Attention Heads = 8
-Feedforward Hidden Size = 256
+
+Vocabulary Size = 10,000
+Character Vocabulary Size = 87
+Word Embedding Dimension = 200
+Character Embedding Dimension = 50
+Character Hidden Dimension = 50
+Hidden Dimension = 256
+Tagset Size = 9
 Dropout Rate = 0.4
-Learning Rate = 0.002071759505536834
+
 Epochs = 15
+Learning Rate = 0.002071759505536834
+Loss Function = CrossEntropyLoss
 Optimizer = AdamW
 Weight Decay = 0.01
-Loss Function = CrossEntropyLoss
 Hyperparameter Tuning: Bayesian Optimization
         """,
         "model_code": """
@@ -51,29 +58,24 @@ class Model(nn.Module):
     def __init__(self, vocab_size, char_vocab_size, word_embedding_dim, char_embedding_dim,
                  char_hidden_dim, hidden_dim, tagset_size, embeddings=None, dropout=0.5):
         super(Model, self).__init__()
-        # Word Embeddings Layer
         self.word_embedding = nn.Embedding(vocab_size, word_embedding_dim, padding_idx=word2idx['<PAD>'])
         if embeddings is not None:
             self.word_embedding.weight = nn.Parameter(embeddings)
             self.word_embedding.weight.requires_grad = True
         self.word_dropout = nn.Dropout(dropout)
-        # Character Embeddings Layer
         self.char_embedding = nn.Embedding(char_vocab_size, char_embedding_dim, padding_idx=char2idx['<PAD>'])
         self.char_lstm = nn.LSTM(char_embedding_dim, char_hidden_dim, num_layers=1,
                                  bidirectional=True, batch_first=True)
         self.char_dropout = nn.Dropout(dropout)
-        # BiLSTM Layer
         self.bilstm = nn.LSTM(word_embedding_dim + 2 * char_hidden_dim, hidden_dim // 2,
                               num_layers=2, bidirectional=True, batch_first=True, dropout=dropout)
-        # Normalization Layer
         self.layer_norm = nn.LayerNorm(hidden_dim)
         self.lstm_dropout = nn.Dropout(dropout)
-        # Attention Layer
         self.attention = nn.MultiheadAttention(embed_dim=hidden_dim, num_heads=8, dropout=dropout, batch_first=True)
-        # Fully Connected Layer
         self.hidden2tag = nn.Linear(hidden_dim, tagset_size)
-    def forward(self, x, chars):
-        word_embeds = self.word_embedding(x)
+
+    def forward(self, words, chars):
+        word_embeds = self.word_embedding(words)
         word_embeds = self.word_dropout(word_embeds)
         batch_size, seq_len, char_len = chars.size()
         chars = chars.view(batch_size * seq_len, char_len)
@@ -91,6 +93,7 @@ class Model(nn.Module):
         combined_output = lstm_out + attn_output
         tag_space = self.hidden2tag(combined_output)
         return tag_space
+
         """
     }
 }
@@ -336,8 +339,17 @@ def main():
     
     # st.divider()        
     st.feedback("thumbs")
-    st.warning("""Disclaimer: This model has been quantized for optimization.
-            Check here for more details: [GitHub Repo🐙](https://github.com/verneylmavt/st-ner)""")
+    st.warning("""Disclaimer: This model has been quantized for optimization.""")
+    mention(
+            label="GitHub Repo: verneylmavt/st-ner",
+            icon="github",
+            url="https://github.com/verneylmavt/st-ner"
+        )
+    mention(
+            label="Other ML Tasks",
+            icon="streamlit",
+            url="https://verneylogyt.streamlit.app/"
+        )
     st.divider()
     
     st.subheader("""Pre-Processing""")
@@ -347,7 +359,80 @@ def main():
     st.code(model_info[model]["parameters"], language="None")
     
     st.subheader("""Model""")
-    st.code(model_info[model]["model_code"], language="python")
+    with echo_expander(code_location="below", label="Code"):
+        import torch
+        import torch.nn as nn
+        
+        
+        class Model(nn.Module):
+            def __init__(self, vocab_size, char_vocab_size, word_embedding_dim, char_embedding_dim,
+                        char_hidden_dim, hidden_dim, tagset_size, embeddings=None, dropout=0.5):
+                super(Model, self).__init__()
+                # Embedding Layer for Word w/ Padding Index for '<PAD>'
+                self.word_embedding = nn.Embedding(vocab_size, word_embedding_dim, padding_idx=word2idx['<PAD>'])
+                # Parameter Layer for Word Embeddings Initialization w/ Pre-Trained Embeddings (if provided)
+                if embeddings is not None:
+                    self.word_embedding.weight = nn.Parameter(embeddings)
+                    self.word_embedding.weight.requires_grad = True # Gradient Enabling for Fine-Tuning
+                # Dropout Layer for Word Regularization
+                self.word_dropout = nn.Dropout(dropout)
+                
+                # Embedding Layer for Character w/ Padding Index for '<PAD>'
+                self.char_embedding = nn.Embedding(char_vocab_size, char_embedding_dim, padding_idx=char2idx['<PAD>'])
+                # UniLSTM Layer for Character Feature Extraction
+                self.char_lstm = nn.LSTM(char_embedding_dim, char_hidden_dim, num_layers=1,
+                                        bidirectional=True, batch_first=True)
+                # Dropout Layer for Character Regularization
+                self.char_dropout = nn.Dropout(dropout)
+                
+                # BiLSTM Layer for Contextual Word and Character Representation
+                self.bilstm = nn.LSTM(word_embedding_dim + 2 * char_hidden_dim, hidden_dim // 2,
+                                    num_layers=2, bidirectional=True, batch_first=True, dropout=dropout)
+                # Normalization Layer for Word and Character Stabilization
+                self.layer_norm = nn.LayerNorm(hidden_dim)
+                # Dropout Layer for Word and Character Regularization
+                self.lstm_dropout = nn.Dropout(dropout)
+                # Multi-Head Attention Layer for Contextual Word and Character Feature Extraction
+                self.attention = nn.MultiheadAttention(embed_dim=hidden_dim, num_heads=8, dropout=dropout, batch_first=True)
+                # Fully Connected Layer for Word and Character → Tag Space
+                self.hidden2tag = nn.Linear(hidden_dim, tagset_size)
+            
+            def forward(self, words, chars):
+                # Word Embeddings of Input Words
+                word_embeds = self.word_embedding(words)
+                # Dropout of Word Embeddings
+                word_embeds = self.word_dropout(word_embeds)
+
+                batch_size, seq_len, char_len = chars.size()
+                chars = chars.view(batch_size * seq_len, char_len)
+                # Character Embeddings of Input Characters
+                char_embeds = self.char_embedding(chars)
+                # UniLSTM of Character Embeddings 
+                char_lstm_out, _ = self.char_lstm(char_embeds)
+                # Concatenation of Forward and Backward Character Hidden States of Last Time Step
+                char_hidden = torch.cat((char_lstm_out[:, -1, :char_lstm_out.size(2)//2],
+                                        char_lstm_out[:, -1, char_lstm_out.size(2)//2:]), dim=1)
+                # Dropout of Character Hidden States
+                char_hidden = self.char_dropout(char_hidden)
+                # Reshaping of Character Hidden States → Word Embeddings
+                char_hidden = char_hidden.view(batch_size, seq_len, -1)
+                
+                # Concatenation of Word Embeddings and Character Hidden States
+                combined = torch.cat((word_embeds, char_hidden), dim=2)
+                # BiLSTM of Word Embeddings and Character Hidden States
+                lstm_out, _ = self.bilstm(combined)
+                # Normalization of BiLSTM Output
+                lstm_out = self.layer_norm(lstm_out)
+                # Dropout of BiLSTM Output
+                lstm_out = self.lstm_dropout(lstm_out)
+                # Attention of BiLSTM Output
+                attn_output, attn_weights = self.attention(lstm_out, lstm_out, lstm_out)
+                # Residual Connection: BiLSTM Output + Attention Output
+                combined_output = lstm_out + attn_output
+                # Transformation of Residual Connection → Tag Space
+                tag_space = self.hidden2tag(combined_output)
+                return tag_space
+    # st.code(model_info[model]["model_code"], language="python")
     
     if "forward_pass" in model_info[model]:
         st.subheader("Forward Pass")
@@ -357,7 +442,9 @@ def main():
     else: pass
     
     st.subheader("""Training""")
-    st.line_chart(training_data.set_index("Epoch"))
+    # st.line_chart(training_data.set_index("Epoch"))
+    with chart_container(training_data):
+        st.line_chart(training_data.set_index("Epoch"))
     
     st.subheader("""Evaluation Metrics""")
     col1, col2, col3, col4 = st.columns(4)

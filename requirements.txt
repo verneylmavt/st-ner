@@ -1,4 +1,6 @@
 streamlit
+streamlit-extras
 spacy
 pandas
+torch
 onnxruntime
