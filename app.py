@@ -335,7 +335,7 @@ def main():
                     annotated_output = render_ner(tokens, tags)
                 annotated_text(*annotated_output)
             else:
-                st.warning("Please enter some text for analysis.")
+                st.warning("Please enter some text for recognition.")
     
     # st.divider()        
     st.feedback("thumbs")

@@ -45,6 +45,8 @@ Ensure you have the following installed:
    streamlit run app.py
    ```
 
+Alternatively you can run `demo.ipynb` for a minimal setup to quickly test the model (implemented w/ `ipywidgets`).
+
 <!-- ### Notes
 
 - Ensure all required model files (ONNX models, vocabulary files, etc.) are placed in the appropriate directories as referenced in the app.
