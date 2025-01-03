@@ -47,22 +47,12 @@ Ensure you have the following installed:
 
 Alternatively you can run `demo.ipynb` for a minimal interface to quickly test the model (implemented w/ `ipywidgets`).
 
-<!-- ### Notes
+## Acknowledgement
 
-- Ensure all required model files (ONNX models, vocabulary files, etc.) are placed in the appropriate directories as referenced in the app.
-- If you encounter issues, check the error logs and ensure all dependencies are correctly installed. -->
-<!--
+I acknowledge the use of the **CoNLL-2003** dataset provided by the **Conference on Computational Natural Language Learning (CoNLL)**. This dataset has been instrumental in conducting the research and developing this project.
 
-## Features
+- **Dataset Name**: CoNLL-2003
+- **Source**: [https://www.aclweb.org/anthology/W03-0419/](https://www.aclweb.org/anthology/W03-0419/)
+- **Description**: This dataset was introduced as part of the CoNLL-2003 shared task on language-independent named entity recognition. It includes annotated data for four types of named entities: persons (PER), locations (LOC), organizations (ORG), and miscellaneous names (MISC). The dataset covers English and German languages and is widely used for training and evaluating NER systems.
 
-- Multiple neural network models for sentiment analysis, including Bi-RNN, Text CNN, and Hybrid CNN-RNN with Attention Mechanism.
-- Interactive model selection and sentiment analysis interface.
-- Transparency with preprocessing steps, parameters, and architecture details displayed.
-
-## Contributions
-
-Contributions and suggestions are welcome! Feel free to open an issue or submit a pull request for improvements or additional features.
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for more details. -->
+I deeply appreciate the efforts of the CoNLL organization in making this dataset available.
