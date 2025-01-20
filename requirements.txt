@@ -1,7 +1,6 @@
 streamlit
-htbuilder
-st-annotated-text
-streamlit-extras
+htbuilder==0.7.0
+streamlit-extras==0.5.0
 spacy
 pandas
 torch
