@@ -1,4 +1,6 @@
 streamlit
+htbuilder
+st-annotated-text
 streamlit-extras
 spacy
 pandas
