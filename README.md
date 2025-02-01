@@ -18,14 +18,14 @@ If you encounter message `This app has gone to sleep due to inactivity`, click `
 
 If the demo page is not working, you can fork or clone this repository and run the application locally by following these steps:
 
-### Prerequisites
+<!-- ### Prerequisites
 
 Ensure you have the following installed:
 
 - Python 3.8 or later
 - pip (Python Package Installer)
 
-### Installation Steps
+### Installation Steps -->
 
 1. Clone the repository:
 
