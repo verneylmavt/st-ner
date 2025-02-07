@@ -21,7 +21,6 @@ def load_spacy():
         return spacy.load(model_path)
     else:
         raise FileNotFoundError(f"SpaCy model not found at {model_path}. Please ensure it is correctly placed.")
-spacy_en = load_spacy()
 
 # ----------------------
 # Model Information
@@ -147,6 +146,8 @@ def load_training_data():
 # Prediction Function
 # ----------------------
 def tokenizer(sentence):
+    spacy_en = load_spacy()
+    
     return [
         token.text for token in spacy_en(sentence)
     ]
