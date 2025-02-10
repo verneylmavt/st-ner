@@ -25,77 +25,81 @@ def load_spacy():
 # ----------------------
 # Model Information
 # ----------------------
-model_info = {
-    "bilstm-w-a": {
-        "subheader": "Model: Bi-LSTM w/ Attention",
-        "pre_processing": """
-Dataset = CoNLL 2003
-Tokenizer = NLTK("Word Tokenizer")
-Embedding Model = GloVe("6B.200d")
-        """,
-        "parameters": """
-Batch Size = 64
 
-Vocabulary Size = 10,000
-Character Vocabulary Size = 87
-Word Embedding Dimension = 200
-Character Embedding Dimension = 50
-Character Hidden Dimension = 50
-Hidden Dimension = 256
-Tagset Size = 9
-Dropout Rate = 0.4
+@st.cache_resource
+def load_model_info():
+    model_info = {
+        "bilstm-w-a": {
+            "subheader": "Model: Bi-LSTM w/ Attention",
+            "pre_processing": """
+    Dataset = CoNLL 2003
+    Tokenizer = NLTK("Word Tokenizer")
+    Embedding Model = GloVe("6B.200d")
+            """,
+            "parameters": """
+    Batch Size = 64
 
-Epochs = 15
-Learning Rate = 0.002071759505536834
-Loss Function = CrossEntropyLoss
-Optimizer = AdamW
-Weight Decay = 0.01
-Hyperparameter Tuning: Bayesian Optimization
-        """,
-        "model_code": """
-class Model(nn.Module):
-    def __init__(self, vocab_size, char_vocab_size, word_embedding_dim, char_embedding_dim,
-                 char_hidden_dim, hidden_dim, tagset_size, embeddings=None, dropout=0.5):
-        super(Model, self).__init__()
-        self.word_embedding = nn.Embedding(vocab_size, word_embedding_dim, padding_idx=word2idx['<PAD>'])
-        if embeddings is not None:
-            self.word_embedding.weight = nn.Parameter(embeddings)
-            self.word_embedding.weight.requires_grad = True
-        self.word_dropout = nn.Dropout(dropout)
-        self.char_embedding = nn.Embedding(char_vocab_size, char_embedding_dim, padding_idx=char2idx['<PAD>'])
-        self.char_lstm = nn.LSTM(char_embedding_dim, char_hidden_dim, num_layers=1,
-                                 bidirectional=True, batch_first=True)
-        self.char_dropout = nn.Dropout(dropout)
-        self.bilstm = nn.LSTM(word_embedding_dim + 2 * char_hidden_dim, hidden_dim // 2,
-                              num_layers=2, bidirectional=True, batch_first=True, dropout=dropout)
-        self.layer_norm = nn.LayerNorm(hidden_dim)
-        self.lstm_dropout = nn.Dropout(dropout)
-        self.attention = nn.MultiheadAttention(embed_dim=hidden_dim, num_heads=8, dropout=dropout, batch_first=True)
-        self.hidden2tag = nn.Linear(hidden_dim, tagset_size)
+    Vocabulary Size = 10,000
+    Character Vocabulary Size = 87
+    Word Embedding Dimension = 200
+    Character Embedding Dimension = 50
+    Character Hidden Dimension = 50
+    Hidden Dimension = 256
+    Tagset Size = 9
+    Dropout Rate = 0.4
 
-    def forward(self, words, chars):
-        word_embeds = self.word_embedding(words)
-        word_embeds = self.word_dropout(word_embeds)
-        batch_size, seq_len, char_len = chars.size()
-        chars = chars.view(batch_size * seq_len, char_len)
-        char_embeds = self.char_embedding(chars)
-        char_lstm_out, _ = self.char_lstm(char_embeds)
-        char_hidden = torch.cat((char_lstm_out[:, -1, :char_lstm_out.size(2)//2],
-                                 char_lstm_out[:, -1, char_lstm_out.size(2)//2:]), dim=1)
-        char_hidden = self.char_dropout(char_hidden)
-        char_hidden = char_hidden.view(batch_size, seq_len, -1)
-        combined = torch.cat((word_embeds, char_hidden), dim=2)
-        lstm_out, _ = self.bilstm(combined)
-        lstm_out = self.layer_norm(lstm_out)
-        lstm_out = self.lstm_dropout(lstm_out)
-        attn_output, attn_weights = self.attention(lstm_out, lstm_out, lstm_out)
-        combined_output = lstm_out + attn_output
-        tag_space = self.hidden2tag(combined_output)
-        return tag_space
+    Epochs = 15
+    Learning Rate = 0.002071759505536834
+    Loss Function = CrossEntropyLoss
+    Optimizer = AdamW
+    Weight Decay = 0.01
+    Hyperparameter Tuning: Bayesian Optimization
+            """,
+            "model_code": """
+    class Model(nn.Module):
+        def __init__(self, vocab_size, char_vocab_size, word_embedding_dim, char_embedding_dim,
+                    char_hidden_dim, hidden_dim, tagset_size, embeddings=None, dropout=0.5):
+            super(Model, self).__init__()
+            self.word_embedding = nn.Embedding(vocab_size, word_embedding_dim, padding_idx=word2idx['<PAD>'])
+            if embeddings is not None:
+                self.word_embedding.weight = nn.Parameter(embeddings)
+                self.word_embedding.weight.requires_grad = True
+            self.word_dropout = nn.Dropout(dropout)
+            self.char_embedding = nn.Embedding(char_vocab_size, char_embedding_dim, padding_idx=char2idx['<PAD>'])
+            self.char_lstm = nn.LSTM(char_embedding_dim, char_hidden_dim, num_layers=1,
+                                    bidirectional=True, batch_first=True)
+            self.char_dropout = nn.Dropout(dropout)
+            self.bilstm = nn.LSTM(word_embedding_dim + 2 * char_hidden_dim, hidden_dim // 2,
+                                num_layers=2, bidirectional=True, batch_first=True, dropout=dropout)
+            self.layer_norm = nn.LayerNorm(hidden_dim)
+            self.lstm_dropout = nn.Dropout(dropout)
+            self.attention = nn.MultiheadAttention(embed_dim=hidden_dim, num_heads=8, dropout=dropout, batch_first=True)
+            self.hidden2tag = nn.Linear(hidden_dim, tagset_size)
 
-        """
+        def forward(self, words, chars):
+            word_embeds = self.word_embedding(words)
+            word_embeds = self.word_dropout(word_embeds)
+            batch_size, seq_len, char_len = chars.size()
+            chars = chars.view(batch_size * seq_len, char_len)
+            char_embeds = self.char_embedding(chars)
+            char_lstm_out, _ = self.char_lstm(char_embeds)
+            char_hidden = torch.cat((char_lstm_out[:, -1, :char_lstm_out.size(2)//2],
+                                    char_lstm_out[:, -1, char_lstm_out.size(2)//2:]), dim=1)
+            char_hidden = self.char_dropout(char_hidden)
+            char_hidden = char_hidden.view(batch_size, seq_len, -1)
+            combined = torch.cat((word_embeds, char_hidden), dim=2)
+            lstm_out, _ = self.bilstm(combined)
+            lstm_out = self.layer_norm(lstm_out)
+            lstm_out = self.lstm_dropout(lstm_out)
+            attn_output, attn_weights = self.attention(lstm_out, lstm_out, lstm_out)
+            combined_output = lstm_out + attn_output
+            tag_space = self.hidden2tag(combined_output)
+            return tag_space
+
+            """
+        }
     }
-}
+    return model_info
 
 # ----------------------
 # Loading Function
@@ -308,6 +312,7 @@ def main():
                     )
     st.title("Named-Entity Recognition (NER)")
     
+    model_info = load_model_info()
     model_names = list(model_info.keys())
     model = st.selectbox("Select a Model", model_names)
     st.divider()
