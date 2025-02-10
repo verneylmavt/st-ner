@@ -3,7 +3,7 @@ import json
 import streamlit as st
 from streamlit_extras.chart_container import chart_container
 from streamlit_extras.mention import mention
-from streamlit_extras.echo_expander import echo_expander
+# from streamlit_extras.echo_expander import echo_expander
 import numpy as np
 import pandas as pd
 import spacy
@@ -363,6 +363,8 @@ def main():
     st.code(model_info[model]["parameters"], language="None")
     
     st.subheader("""Model""")
+    
+    from streamlit_extras.echo_expander import echo_expander
     with echo_expander(code_location="below", label="Code"):
         import torch
         import torch.nn as nn
