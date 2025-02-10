@@ -303,6 +303,9 @@ def render_ner(tokens, tags):
 # Page UI
 # ----------------------
 def main():
+    st.set_page_config(page_title="Named-Entity Recognition (NER)"
+                    # layout="wide"
+                    )
     st.title("Named-Entity Recognition (NER)")
     
     model_names = list(model_info.keys())
